@@ -1,7 +1,5 @@
 <?php namespace app\locker\data\dashboards;
 
-use App\Locker\Repository\Query\EloquentQueryRepository as Query;
-
 class AdminDashboard extends \app\locker\data\BaseData {
 
   private $user;
@@ -60,11 +58,40 @@ class AdminDashboard extends \app\locker\data\BaseData {
    *
    **/
   public function actorCount(){
-    $mbox =  intval( \Statement::distinct('statement.actor.mbox')->remember(5)->get()->count() );
-    $openid =  intval( \Statement::distinct('statement.actor.openid')->remember(5)->get()->count() );
-    $mbox_sha1sum =  intval( \Statement::distinct('statement.actor.mbox_sha1sum')->remember(5)->get()->count() );
-    $account =  intval( \Statement::distinct('statement.actor.account.name')->remember(5)->get()->count() );
-    return ($mbox + $openid + $mbox_sha1sum + $account);
+    $count_array = ['mbox' => '', 'openid' => '', 'mbox_sha1sum' => '', 'account' => ''];
+    
+    $count_array['mbox'] = $this->db->statements->aggregate([
+      ['$match' => ['statement.actor.mbox' => ['$exists' => true]]],
+      ['$group' => ['_id' => '$statement.actor.mbox']],
+      ['$group' => ['_id' => 1, 'count' => ['$sum' => 1]]]
+    ]);
+    
+    $count_array['openid'] = $this->db->statements->aggregate([
+      ['$match' => ['statement.actor.openid' => ['$exists' => true]]],
+      ['$group' => ['_id' => '$statement.actor.openid']],
+      ['$group' => ['_id' => 1, 'count' => ['$sum' => 1]]]
+    ]);
+    
+    $count_array['mbox_sha1sum'] = $this->db->statements->aggregate([
+      ['$match' => ['statement.actor.mbox_sha1sum' => ['$exists' => true]]],
+      ['$group' => ['_id' => '$statement.actor.mbox_sha1sum']],
+      ['$group' => ['_id' => 1, 'count' => ['$sum' => 1]]]
+    ]);
+    
+    $count_array['account'] = $this->db->statements->aggregate([
+      ['$match' => ['statement.actor.account' => ['$exists' => true]]],
+      ['$group' => ['_id' => ['accountName' => '$statement.actor.account.name', 'accountHomePage' => '$statement.actor.account.homePage']]],
+      ['$group' => ['_id' => 1, 'count' => ['$sum' => 1]]]
+    ]);
+
+    $summary = 0;
+    foreach ($count_array as $key => $val) {
+        if( isset($val['result'][0]) ){
+          $summary += $val['result'][0]['count'];
+        }
+    }
+    
+    return $summary;
   }
 
   /**

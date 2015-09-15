@@ -20,11 +20,8 @@ class Statements extends Base {
    */
   public function where() {
     $limit = \LockerRequest::getParam('limit', 100);
-    $filters = json_decode(
-      \LockerRequest::getParam('filters'),
-      true
-    ) ?: [];
-    return \Response::json($this->query->where($this->lrs->_id, $filters)->paginate($limit));
+    $filters = $this->getParam('filters');
+    return \Response::json($this->query->where($this->getOptions()['lrs_id'], $filters)->paginate($limit));
   }
 
   /**
@@ -32,11 +29,8 @@ class Statements extends Base {
    * @return Aggregate http://php.net/manual/en/mongocollection.aggregate.php#refsect1-mongocollection.aggregate-examples
    */
   public function aggregate() {
-    $pipeline = json_decode(
-      \LockerRequest::getParam('pipeline'),
-      true
-    ) ?: [['$match' => ['active' => true]]];
-    return \Response::json($this->query->aggregate($this->lrs->_id, $pipeline));
+    $pipeline = $this->getParam('pipeline');
+    return \Response::json($this->query->aggregate($this->getOptions(), $pipeline));
   }
 
   /**
@@ -44,11 +38,8 @@ class Statements extends Base {
    * @return Aggregate http://php.net/manual/en/mongocollection.aggregate.php#refsect1-mongocollection.aggregate-examples
    */
   public function aggregateTime() {
-    $match = json_decode(
-      \LockerRequest::getParam('match'),
-      true
-    ) ?: [];
-    return \Response::json($this->query->aggregateTime($this->lrs->_id, $match));
+    $match = $this->getParam('match');
+    return \Response::json($this->query->aggregateTime($this->getOptions(), $match));
   }
 
   /**
@@ -56,11 +47,8 @@ class Statements extends Base {
    * @return Aggregate http://php.net/manual/en/mongocollection.aggregate.php#refsect1-mongocollection.aggregate-examples
    */
   public function aggregateObject() {
-    $match = json_decode(
-      \LockerRequest::getParam('match'),
-      true
-    ) ?: [];
-    return \Response::json($this->query->aggregateObject($this->lrs->_id, $match));
+    $match = $this->getParam('match');
+    return \Response::json($this->query->aggregateObject($this->getOptions(), $match));
   }
 
   /**
@@ -80,11 +68,28 @@ class Statements extends Base {
     return $this->returnJson($data);
   }
 
+  /**
+   * Inserts new statements based on existing ones in one query using our existing aggregation.
+   * @return Json<[String]> Ids of the inserted statements.
+   */
+  public function insert() {
+    $pipeline = $this->getParam('pipeline');
+    return \Response::json($this->query->insert($pipeline, $this->getOptions()));
+  }
+
   public function void() {
-    $match = json_decode(
-      \LockerRequest::getParam('match'),
-      true
-    ) ?: [];
+    $match = $this->getParam('match');
     return \Response::json($this->query->void($match, $this->getOptions()));
+  }
+
+  private function getParam($param) {
+    $param_value = \LockerRequest::getParam($param);
+    $value = json_decode($param_value, true);
+    if ($value === null && $param_value === null) {
+      throw new Exceptions\Exception("Expected `$param` to be defined as a URL parameter.");
+    } else if ($value === null) {
+      throw new Exceptions\Exception("Expected the value of `$param` to be valid JSON in the URL parameter.");
+    }
+    return $value;
   }
 }

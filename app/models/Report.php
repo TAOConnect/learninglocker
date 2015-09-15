@@ -11,7 +11,7 @@ class Report extends Eloquent {
    */
   protected $collection = 'reports';
   public static $rules = [];
-  protected $fillable = ['name', 'description', 'query', 'lrs', 'since', 'until'];
+  protected $fillable = ['name', 'description', 'query', 'lrs_id', 'since', 'until'];
   protected $actorQuery = [ 'statement.actor.account', 'statement.actor.mbox', 'statement.actor.openid', 'statement.actor.mbox_sha1sum' ];
   protected $instructorQuery = [
     'statement.context.instructor.account',
@@ -56,7 +56,11 @@ class Report extends Eloquent {
           $instructorMatch['$or'][] = $this->constructOr($key, $value);
         } else {
           if (is_array($value)) {
-            $match[$key] = ['$in' => $value];
+            if($value[0] != '<>') {
+              $match[$key] = ['$in' => $value];
+            } else {
+              $match[$key] = ['$lte' => $value[2], '$gte' => $value[1]];
+            }
           } else {
             $match[$key] = $value;
           }
@@ -76,13 +80,16 @@ class Report extends Eloquent {
     if ($until) {
       $match['statement.timestamp']['$lte'] = $until;
     }
-    $andMatch = ['$and' => []];
-    if (!empty($actorMatch)) $andMatch['$and'][] = $actorMatch;
-    if (!empty($instructorMatch)) $andMatch['$and'][] = $instructorMatch;
-    if (!empty($match)) $andMatch['$and'][] = $match;
-    //echo(json_encode($andMatch));die;
+    $andMatch = [];
+    if (!empty($actorMatch)) $andMatch[] = $actorMatch;
+    if (!empty($instructorMatch)) $andMatch[] = $instructorMatch;
+    if (!empty($match)) $andMatch[] = $match;
 
-    return $andMatch;
+    if (!empty($andMatch)) {
+      $match = ['$and' => $andMatch];
+    }
+
+    return $match;
   }
 
   public function getWhereAttribute() {
@@ -100,7 +107,11 @@ class Report extends Eloquent {
           array_push($instructorArray, [$key, $query[$key]]);
         } else {
           if (is_array($query[$key])) {
-            array_push($wheres, [$key, 'in', $query[$key]]);
+            if($query[$key][0] != '<>') {
+              array_push($wheres, [$key, 'in', $query[$key]]);
+            } else {
+              array_push($wheres, [$key, 'between', $query[$key][1], $query[$key][2]]);
+            }
           } else {
             array_push($wheres, [$key, '=', $query[$key]]);
           }
