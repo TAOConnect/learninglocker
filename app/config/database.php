@@ -61,8 +61,8 @@ return array(
 		    'driver'   => 'mongodb',
 		    'host'     => 'localhost',
 		    'port'     => 27017,
-		    'username' => '',
-		    'password' => '',
+		    'username' => 'learnlockuser',
+		    'password' => 'learnlockpwd',
 		    'database' => 'learninglocker' // Default name (removing this makes Travis fail).
 		),
 

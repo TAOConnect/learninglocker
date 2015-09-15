@@ -28,7 +28,7 @@ return array(
   |
   */
 
-  'host' => 'smtp.mailgun.org',
+  'host' => 'email-smtp.us-east-1.amazonaws.com',
 
   /*
   |--------------------------------------------------------------------------
@@ -54,7 +54,7 @@ return array(
   |
   */
 
-  'from' => array('address' => null, 'name' => null),
+'from' => array('address' => 'john.donaldson@taoconnect.org', 'name' => 'John Donaldson'),
 
   /*
   |--------------------------------------------------------------------------
