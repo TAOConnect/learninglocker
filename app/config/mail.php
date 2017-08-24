@@ -54,7 +54,7 @@ return array(
   |
   */
 
-'from' => array('address' => 'john.donaldson@taoconnect.org', 'name' => 'John Donaldson'),
+'from' => array('address' => 'kyle.maharlika@taoconnect.org', 'name' => 'Kyle Maharlika'),
 
   /*
   |--------------------------------------------------------------------------
