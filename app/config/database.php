@@ -8,9 +8,9 @@ return [
         'driver'   => 'mongodb',
         'host'     => 'localhost',
         'port'     => 27017,
-        'username' => '',
-        'password' => '',
-        'database' => 'll_staging' // Default name (removing this makes Travis fail).
+        'username' => 'learnlockuser',
+        'password' => 'jh3kc2Spq47p6C',
+        'database' => 'learninglocker' // Default name (removing this makes Travis fail).
     ],
 	],
 	'migrations' => 'migrations',
