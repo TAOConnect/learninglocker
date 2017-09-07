@@ -24,7 +24,7 @@ class Attachments {
 
     foreach ($parts as $count => $part) {
       // Stops at the end of the file.
-      if ($part == "--") break;
+      if (substr($part,0,2) == "--") break;
 
       // Determines the delimiter.
       $delim = strpos($part, "\r\n") !== false ? "\r\n" : "\n";
@@ -76,7 +76,7 @@ class Attachments {
    * @return String
    */
   private static function getBoundary($content_type) {
-    preg_match('/boundary=(.*)$/', $content_type, $matches);
+    preg_match('/boundary="?(.+?)"?$/', $content_type, $matches);
     if (!isset($matches[1])) throw new Exceptions\Exception(
       'You need to set a boundary if submitting attachments.'
     );

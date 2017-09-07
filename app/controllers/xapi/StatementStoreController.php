@@ -1,5 +1,6 @@
 <?php namespace Controllers\xAPI;
 
+use \Config as Config;
 use \Locker\Repository\Statement\Repository as StatementRepo;
 use \Locker\Helpers\Attachments as Attachments;
 use \Locker\Helpers\Exceptions as Exceptions;
@@ -7,6 +8,7 @@ use \Locker\Helpers\Helpers as Helpers;
 use \Locker\XApi\IMT as XApiImt;
 use \LockerRequest as LockerRequest;
 use \Response as IlluminateResponse;
+use Seld\JsonLint\JsonParser as JsonParser;
 
 class StatementStoreController {
 
@@ -102,11 +104,24 @@ class StatementStoreController {
     $content = $parts['content'];
 
     // Decodes $statements from $content.
-    $statements = json_decode($content);
-    if ($statements === null && $content !== '') {
-      throw new Exceptions\Exception('Invalid JSON');
-    } else if ($statements === null) {
-      $statements = [];
+    try {
+      if (Config::get('xapi.disable_duplicate_key_checks') !== true) {
+        // Check incoming statements for duplicate keys and throw an error if found
+        $jsonParser = new JsonParser;
+        $jsonParser->parse($content, JsonParser::DETECT_KEY_CONFLICTS); // this will catch any parsing issues
+      }
+      
+      $statements = json_decode($content);
+      if ($statements === null && $content !== '') {
+        throw new Exceptions\Exception('Invalid JSON');
+      } else if ($statements === null) {
+        $statements = [];
+      }
+    } catch (\Seld\JsonLint\DuplicateKeyException $e) {
+      $details = $e->getDetails();
+      throw new Exceptions\Exception(sprintf('Invalid JSON: `%s` is a duplicate key on line %s', $details['key'], $details['line']));
+    } catch (\Exception $e) { // some other parsing error occured
+      throw new Exceptions\Exception('Invalid JSON: JSON could not be parsed');
     }
 
     // Ensures that $statements is an array.
@@ -120,13 +135,14 @@ class StatementStoreController {
     }
 
     // Saves $statements with attachments.
-    return $this->statements->store(
+    $result = $this->statements->store(
       $statements,
       is_array($parts['attachments']) ? $parts['attachments'] : [],
       array_merge([
         'authority' => $this->getAuthority($options['client'])
       ], $options)
     );
+    return $result['ids'];
   }
 
   private function getAuthority($client) {

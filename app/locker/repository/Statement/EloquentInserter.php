@@ -15,17 +15,31 @@ class EloquentInserter extends EloquentReader implements Inserter {
    * @param StoreOptions $opts
    * @throws Exceptions\Conflict
    */
-  public function insert(array $statements, StoreOptions $opts) {
+
+  public function insert(array $assoc_statements, StoreOptions $opts) {
     $models = [];
 
-    foreach($statements as $statement) {
-      $duplicate = $this->checkForConflict($statement, $opts);
-      if (!$duplicate) {
-        $models[] = $this->constructModel($statement, $opts);
+    $duplicateStatements = $this->where($opts)
+      ->whereIn('statement.id', array_keys($assoc_statements))
+      ->where('active', true)
+      ->get();
+
+    $duplicatedIds = [];
+    foreach ($duplicateStatements as $duplicate) {
+      $this->compareForConflict($assoc_statements[$duplicate->statement['id']], $this->formatModel($duplicate));
+      $duplicatedIds[] = $duplicate->statement['id'];
+    }
+
+    $toBeInsertedModels = [];
+    foreach($assoc_statements as $statement) {
+      if (!in_array($statement->id, $duplicatedIds)) {
+        $toBeInsertedModels[$statement->id] = $this->constructModel($statement, $opts);
       }
     }
-    
-    return $this->insertModels($models, $opts);
+
+    $this->insertModels($toBeInsertedModels, $opts);
+
+    return array_keys($toBeInsertedModels);
   }
 
   /**
@@ -85,6 +99,8 @@ class EloquentInserter extends EloquentReader implements Inserter {
    * @return [String => Mixed] $model
    */
   private function constructModel(\stdClass $statement, StoreOptions $opts) {
+    $timestamp = new \Carbon\Carbon($statement->timestamp);
+    $stored    = new \Carbon\Carbon($statement->stored);
     return [
       'lrs' => ['_id' => $opts->getOpt('lrs_id')], // Deprecated.
       'lrs_id' => $opts->getOpt('lrs_id'),
@@ -92,8 +108,8 @@ class EloquentInserter extends EloquentReader implements Inserter {
       'statement' => Helpers::replaceFullStop(json_decode(json_encode($statement), true)),
       'active' => false,
       'voided' => false,
-      'timestamp' => new \MongoDate(strtotime($statement->timestamp))
-    ];
+      'timestamp' => new \MongoDate($timestamp->timestamp, $timestamp->micro),
+      'stored'    => new \MongoDate($stored->timestamp, $stored->micro),    ];
   }
 
   /**
@@ -105,6 +121,14 @@ class EloquentInserter extends EloquentReader implements Inserter {
     if(empty($models)) {
       return;
     }
-    return $this->where($opts)->insert($models);
+
+    $modelsValues = array_values($models);
+    $success = $this->where($opts)->insert($modelsValues);
+    if (!$success) {
+      throw new Exceptions\Exception('Error inserting models', 500);
+    }
+
+    // The statement.store event is used the message queue system
+    \Event::fire('statement.inserted', array($modelsValues));
   }
 }

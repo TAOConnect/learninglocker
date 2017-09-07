@@ -12,7 +12,8 @@ class EloquentRepository extends BaseRepository implements Repository {
     'authority' => [
       'name' => 'New Client',
       'mbox' => 'mailto:hello@learninglocker.net'
-    ]
+    ],
+    'scopes' => ['all']
   ];
 
   /**
@@ -63,7 +64,7 @@ class EloquentRepository extends BaseRepository implements Repository {
     ];
     $model->lrs_id = $opts['lrs_id'];
     $model->authority = $data['authority'];
-    $model->scopes = ['all'];
+    $model->scopes = $data['scopes'];
 
     return $model;
   }
@@ -76,7 +77,6 @@ class EloquentRepository extends BaseRepository implements Repository {
    * @return Model
    */
   protected function constructUpdate(Model $model, array $data, array $opts) {
-    //dd($data);
     $this->validateData($data);
 
     // Sets properties on model.
@@ -122,6 +122,18 @@ class EloquentRepository extends BaseRepository implements Repository {
       ]], $opts);
     }
     return parent::destroy($id, $opts);
+  }
+
+  /**
+   * Converts foreign ids to MongoIds, then
+   * gets the model with the given ID and options.
+   * @param String $id ID to match.
+   * @param [String => Mixed] $opts
+   * @return Model
+   */
+  public function show($id, array $opts) {
+    $opts['lrs_id'] = new \MongoId($opts['lrs_id']);
+    return parent::show($id, $opts);
   }
 
   /**

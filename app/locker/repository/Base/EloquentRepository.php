@@ -14,7 +14,7 @@ abstract class EloquentRepository implements Repository {
    * @return \Jenssegers\Mongodb\Eloquent\Builder
    */
   protected function where(array $opts) {
-    return (new $this->model)->where('lrs_id', $opts['lrs_id']);
+    return (new $this->model)->where('lrs_id', new \MongoId($opts['lrs_id']));
   }
 
   /**
@@ -67,7 +67,7 @@ abstract class EloquentRepository implements Repository {
    */
   public function destroy($id, array $opts) {
     $model = $this->show($id, $opts);
-    return $this->fire($model->delete(), 'destroy', $opts, [
+    return $this->fire(is_null($model->delete()), 'destroy', $opts, [
       'id' => $id
     ]);
   }

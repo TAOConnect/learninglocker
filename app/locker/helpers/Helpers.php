@@ -13,6 +13,8 @@ use \Locker\XApi\Errors\Error as XAPIError;
 
 class Helpers {
 
+  const MULTIPART_BOUNDARY = 'abcABC0123\'()+_,-./:=?';
+
   /*
   |----------------------------------------------------------------------------
   | scan array and replace &46; with . (This is a result of . being
@@ -243,5 +245,18 @@ class Helpers {
   static function getLrsFromAuth() {
     list($username, $password) = Helpers::getUserPassFromAuth();
     return Helpers::getLrsFromUserPass($username, $password);
+  }
+
+  public static function convertIds( $models = [] ) {
+    return array_map( function($model){
+      $idString = \MongoId::isValid($model['_id']) ? $model['_id'] : null;
+      $model['_id'] = new \MongoId($idString);
+      return $model;
+    }, $models);
+  }
+
+  public static function mixedMultipartContentType( $boundary = null ){
+    $boundary = $boundary ?: static::MULTIPART_BOUNDARY;
+    return 'multipart/mixed; boundary="' . $boundary . '"';
   }
 }

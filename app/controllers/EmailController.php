@@ -55,10 +55,14 @@ class EmailController extends BaseController {
    *
    **/
   public function verifyEmail( $token ){
+    $message_type = 'error';
+    $message = \Lang::get('users.email_verified_problem');
 
-    $message = $this->user->verifyEmail( $token );
-    return Redirect::to('/')->with('success', $message);
-
+    if($this->user->verifyEmail( $token )){
+        $message_type = 'success';
+        $message = \Lang::get('users.email_verified');
+    }
+    return Redirect::to('/')->with($message_type, $message);
   }
 
   /**
@@ -73,7 +77,7 @@ class EmailController extends BaseController {
               ->where('token', $token)
               ->pluck('email');
     $user = \User::where('email', $email)->first();
-    if (!isset($user->_id)) \App::abort(404, 'This token cannot be found or has expired.');
+    if (!isset($user->_id)) \App::abort(404, 'Your email verification link has expired - please request a new one. ');
     Auth::loginUsingId($user->_id);
     \DB::table('user_tokens')
       ->where('token', $token)

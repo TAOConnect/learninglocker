@@ -134,7 +134,6 @@ class LrsController extends BaseController {
     $dashboard = new \app\locker\data\dashboards\LrsDashboard($lrs_id);
     return View::make('partials.lrs.dashboard', array_merge($this->getLrs($lrs_id), [
       'stats' => $dashboard->getStats(),
-      'graph_data' => $dashboard->getGraphData(),
       'dash_nav' => true,
       'client' => (new \Client)->where('lrs_id', $lrs_id)->first()
     ]));
@@ -192,13 +191,14 @@ class LrsController extends BaseController {
   public function statements($lrs_id){
     $site = \Site::first();
     $statements = (new StatementIndexer)->index(new IndexOptions([
-      'lrs_id' => new \MongoId($lrs_id),
+      'lrs_id' => $lrs_id,
       'limit' => $this->statement->count([
-        'lrs_id' => new \MongoId($lrs_id),
+        'lrs_id' => $lrs_id,
         'scopes' => ['all']
       ]),
       'scopes' => ['all']
-    ]))->orderBy('statement.stored', 'DESC')->paginate(15);
+    ]))->orderBy('stored', 'DESC')->paginate(15, ['*'], ['lrs_id'=>1], ['lrs_id'=>1, 'active'=>-1, 'voided'=>1]);
+
     return View::make('partials.statements.list', array_merge($this->getLrs($lrs_id), [
       'statements' => $statements,
       'statement_nav' => true,
