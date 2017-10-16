@@ -216,10 +216,10 @@ class EloquentIndexer extends EloquentReader implements IndexerInterface {
 
       if ($opts->getOpt('related_activities') === true) {
         $keys = array_merge($keys, [
-          'context.contextActivities.parent.id',
-          'context.contextActivities.grouping.id',
-          'context.contextActivities.category.id',
-          'context.contextActivities.other.id'
+          'context.contextActivities.parent.id'//,
+          // 'context.contextActivities.grouping.id',
+          // 'context.contextActivities.category.id',
+          // 'context.contextActivities.other.id'
         ]);
       }
 
