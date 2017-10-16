@@ -84,8 +84,8 @@ class EloquentIndexer extends EloquentReader implements IndexerInterface {
   private function addWhere(Builder $builder, $key, $value, $op = '=') {
     return $builder->where(function ($query) use ($key, $value, $op) {
       return $query
-        ->orWhere('statement.'.$key, $op, $value)
-        ->orWhere('refs.'.$key, $op, $value);
+        ->orWhere('statement.'.$key, $op, $value);
+        // ->orWhere('refs.'.$key, $op, $value);
     });
   }
 
@@ -101,8 +101,8 @@ class EloquentIndexer extends EloquentReader implements IndexerInterface {
       foreach ($keys as $key) {
         $query->orWhere(function ($query) use ($key, $value) {
           return $query
-            ->orWhere('statement.'.$key, $value)
-            ->orWhere('refs.'.$key, $value);
+            ->orWhere('statement.'.$key, $value);
+            // ->orWhere('refs.'.$key, $value);
         });
       }
       return $query;
